@@ -50,13 +50,26 @@ public class AirMapWMSTile extends AirMapFeature {
       return url;
     }
 
+      private double convertY(int y, int zoom) {
+        double scale = Math.pow(2.0, zoom);
+        double n = Math.PI - (2.0 * Math.PI * y) / scale;
+        return Math.atan(Math.sinh(n)) *180 / Math.PI;
+      }
+
     private double[] getBoundingBox(int x, int y, int zoom) {
-      double tile = FULL / Math.pow(2, zoom);
+      double scale = Math.pow(2.0, zoom);
+
+      double x1 = x/scale * 360 - 180;
+      double x2 = (x+1)/scale * 360 - 180;
+
+      double y1 = convertY(y+1, zoom);
+      double y2 = convertY(y, zoom);
+
       return new double[]{
-              mapBound[0] + x * tile,
-              mapBound[1] - (y + 1) * tile,
-              mapBound[0] + (x + 1) * tile,
-              mapBound[1] - y * tile
+              x1,
+              y1,
+              x2,
+              y2
       };
     }
 
