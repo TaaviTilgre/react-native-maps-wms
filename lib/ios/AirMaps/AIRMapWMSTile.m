@@ -122,7 +122,11 @@
 }
 
 -(NSURL *)URLForTilePath:(MKTileOverlayPath)path{
-    NSArray *bb = [self getBoundBox:path.x yAxis:path.y zoom:path.z];
+    int isUTM = 0;
+    if ([self rangeOfString:@"{UTM}"].location == NSNotFound) {
+        isUTM = 1;
+    }
+    NSArray *bb = [self getBoundBox:path.x yAxis:path.y zoom:path.z isUTM];
     NSMutableString *url = [self.URLTemplate mutableCopy];
     [url replaceOccurrencesOfString: @"{minX}" withString:[NSString stringWithFormat:@"%@", bb[0]] options:0 range:NSMakeRange(0, url.length)];
     [url replaceOccurrencesOfString: @"{minY}" withString:[NSString stringWithFormat:@"%@", bb[1]] options:0 range:NSMakeRange(0, url.length)];
@@ -139,7 +143,7 @@
     return  atan(sinh(n)) * 180 / M_PI;
 }
 
--(NSArray *)getBoundBox:(NSInteger)x yAxis:(NSInteger)y zoom:(NSInteger)zoom{
+-(NSArray *)getBoundBox:(NSInteger)x yAxis:(NSInteger)y zoom:(NSInteger)zoom isUTM(int)utm{
     double scale = pow(2.0, zoom);
 
     double x1 = x/scale * 360 - 180;
