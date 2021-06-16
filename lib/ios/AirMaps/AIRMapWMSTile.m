@@ -122,11 +122,7 @@
 }
 
 -(NSURL *)URLForTilePath:(MKTileOverlayPath)path{
-    int isUTM = 0;
-    if ([self rangeOfString:@"{UTM}"].location == NSNotFound) {
-        isUTM = 1;
-    }
-    NSArray *bb = [self getBoundBox:path.x yAxis:path.y zoom:path.z isUTM];
+    NSArray *bb = [self getBoundBox:path.x yAxis:path.y zoom:path.z];
     NSMutableString *url = [self.URLTemplate mutableCopy];
     [url replaceOccurrencesOfString: @"{minX}" withString:[NSString stringWithFormat:@"%@", bb[0]] options:0 range:NSMakeRange(0, url.length)];
     [url replaceOccurrencesOfString: @"{minY}" withString:[NSString stringWithFormat:@"%@", bb[1]] options:0 range:NSMakeRange(0, url.length)];
@@ -143,35 +139,21 @@
     return  atan(sinh(n)) * 180 / M_PI;
 }
 
--(NSArray *)getBoundBox:(NSInteger)x yAxis:(NSInteger)y zoom:(NSInteger)zoom isUTM(int)utm{
-    NSArray *result  =[[NSArray alloc] init]
+-(NSArray *)getBoundBox:(NSInteger)x yAxis:(NSInteger)y zoom:(NSInteger)zoom{
+    double scale = pow(2.0, zoom);
 
-    if (utm == 0){
-        double scale = pow(2.0, zoom);
+    double x1 = x/scale * 360 - 180;
+    double x2 = (x+1)/scale * 360 - 180;
 
-        double x1 = x/scale * 360 - 180;
-        double x2 = (x+1)/scale * 360 - 180;
+    double y1 = [self convertY:(double)(y+1) Zoom:(double)zoom];
+    double y2 = [self convertY:(double)(y) Zoom:(double)zoom];
 
-        double y1 = [self convertY:(double)(y+1) Zoom:(double)zoom];
-        double y2 = [self convertY:(double)(y) Zoom:(double)zoom];
-
-        result  =[[NSArray alloc] initWithObjects:
+    NSArray *result =[[NSArray alloc] initWithObjects:
                        [NSNumber numberWithDouble:x1 ],
                        [NSNumber numberWithDouble:y1 ],
                        [NSNumber numberWithDouble:x2 ],
                        [NSNumber numberWithDouble:y2 ],
                        nil];
-    } else {
-        double FULLutm = 20037508.34789244 * 2; 282560
-        double tile = FULLutm / pow(2.0, (double)zoom);
-
-        NSArray *result  =[[NSArray alloc] initWithObjects:
-                       [NSNumber numberWithDouble:MapX + (double)x * tile ],
-                       [NSNumber numberWithDouble:MapY - (double)(y+1) * tile ],
-                       [NSNumber numberWithDouble:MapX + (double)(x+1) * tile ],
-                       [NSNumber numberWithDouble:MapY - (double)y * tile ],
-                       nil];
-    }
 
     return result;
 }
