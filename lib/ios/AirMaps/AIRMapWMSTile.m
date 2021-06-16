@@ -144,20 +144,34 @@
 }
 
 -(NSArray *)getBoundBox:(NSInteger)x yAxis:(NSInteger)y zoom:(NSInteger)zoom isUTM(int)utm{
-    double scale = pow(2.0, zoom);
+    NSArray *result  =[[NSArray alloc] init]
 
-    double x1 = x/scale * 360 - 180;
-    double x2 = (x+1)/scale * 360 - 180;
+    if (utm == 0){
+        double scale = pow(2.0, zoom);
 
-    double y1 = [self convertY:(double)(y+1) Zoom:(double)zoom];
-    double y2 = [self convertY:(double)(y) Zoom:(double)zoom];
+        double x1 = x/scale * 360 - 180;
+        double x2 = (x+1)/scale * 360 - 180;
 
-    NSArray *result  =[[NSArray alloc] initWithObjects:
+        double y1 = [self convertY:(double)(y+1) Zoom:(double)zoom];
+        double y2 = [self convertY:(double)(y) Zoom:(double)zoom];
+
+        result  =[[NSArray alloc] initWithObjects:
                        [NSNumber numberWithDouble:x1 ],
                        [NSNumber numberWithDouble:y1 ],
                        [NSNumber numberWithDouble:x2 ],
                        [NSNumber numberWithDouble:y2 ],
                        nil];
+    } else {
+        double FULLutm = 20037508.34789244 * 2; 282560
+        double tile = FULLutm / pow(2.0, (double)zoom);
+
+        NSArray *result  =[[NSArray alloc] initWithObjects:
+                       [NSNumber numberWithDouble:MapX + (double)x * tile ],
+                       [NSNumber numberWithDouble:MapY - (double)(y+1) * tile ],
+                       [NSNumber numberWithDouble:MapX + (double)(x+1) * tile ],
+                       [NSNumber numberWithDouble:MapY - (double)y * tile ],
+                       nil];
+    }
 
     return result;
 }
