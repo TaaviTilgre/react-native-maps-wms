@@ -148,7 +148,7 @@
     double y1 = [self convertY:(double)(y+1) Zoom:(double)zoom];
     double y2 = [self convertY:(double)(y) Zoom:(double)zoom];
 
-    NSArray *result  =[[NSArray alloc] initWithObjects:
+    NSArray *result =[[NSArray alloc] initWithObjects:
                        [NSNumber numberWithDouble:x1 ],
                        [NSNumber numberWithDouble:y1 ],
                        [NSNumber numberWithDouble:x2 ],
