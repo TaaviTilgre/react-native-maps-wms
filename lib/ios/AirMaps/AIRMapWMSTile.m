@@ -142,8 +142,8 @@
 -(NSArray *)getBoundBox:(NSInteger)x yAxis:(NSInteger)y zoom:(NSInteger)zoom{
     double scale = pow(2.0, zoom);
 
-    double x1 = x/scale * 360 - 180;
-    double x2 = (x+1)/scale * 360 - 180;
+    double x1 = x/scale * 36;
+    double x2 = (x+1)/scale * 36;
 
     double y1 = [self convertY:(double)(y+1) Zoom:(double)zoom];
     double y2 = [self convertY:(double)(y) Zoom:(double)zoom];
