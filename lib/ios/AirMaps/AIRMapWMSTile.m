@@ -8,6 +8,8 @@
 
 #import "AIRMapWMSTile.h"
 #import <React/UIView+React.h>
+#import <UIKit/UIKit.h>
+#import <JavaScriptCore/JavaScriptCore.h>
 
 @implementation AIRMapWMSTile {
     BOOL _urlTemplateSet;
@@ -122,7 +124,8 @@
 }
 
 -(NSURL *)URLForTilePath:(MKTileOverlayPath)path{
-    NSArray *bb = [self getBoundBox:path.x yAxis:path.y zoom:path.z];
+    int isUTM = 0;
+    NSArray *bb = [self getBoundBox:path.x yAxis:path.y zoom:path.z isUTM:isUTM];
     NSMutableString *url = [self.URLTemplate mutableCopy];
     [url replaceOccurrencesOfString: @"{minX}" withString:[NSString stringWithFormat:@"%@", bb[0]] options:0 range:NSMakeRange(0, url.length)];
     [url replaceOccurrencesOfString: @"{minY}" withString:[NSString stringWithFormat:@"%@", bb[1]] options:0 range:NSMakeRange(0, url.length)];
@@ -139,7 +142,26 @@
     return  atan(sinh(n)) * 180 / M_PI;
 }
 
--(NSArray *)getBoundBox:(NSInteger)x yAxis:(NSInteger)y zoom:(NSInteger)zoom{
+- (NSString *) getDataFrom:(NSString *)url{
+    NSMutableURLRequest *request = [[NSMutableURLRequest alloc] init];
+    [request setHTTPMethod:@"GET"];
+    [request setURL:[NSURL URLWithString:url]];
+
+    NSError *error = nil;
+    NSHTTPURLResponse *responseCode = nil;
+
+    NSData *oResponseData = [NSURLConnection sendSynchronousRequest:request returningResponse:&responseCode error:&error];
+
+    if([responseCode statusCode] != 200){
+        NSLog(@"Error getting %@, HTTP status code %i", url, [responseCode statusCode]);
+        return nil;
+    }
+
+    return [[NSString alloc] initWithData:oResponseData encoding:NSUTF8StringEncoding];
+}
+
+
+-(NSArray *)getBoundBox:(NSInteger)x yAxis:(NSInteger)y zoom:(NSInteger)zoom isUTM:(NSInteger)isUTM{
     double scale = pow(2.0, zoom);
 
     double x1 = x/scale * 360 - 180;
@@ -148,7 +170,45 @@
     double y1 = [self convertY:(double)(y+1) Zoom:(double)zoom];
     double y2 = [self convertY:(double)(y) Zoom:(double)zoom];
 
-    NSArray *result =[[NSArray alloc] initWithObjects:
+    if (isUTM == 1){
+        NSNumber *myX1DoubleNumber = [NSNumber numberWithDouble:x1];
+        NSNumber *myY1DoubleNumber = [NSNumber numberWithDouble:y1];
+        NSNumber *myX2DoubleNumber = [NSNumber numberWithDouble:x2];
+        NSNumber *myY2DoubleNumber = [NSNumber numberWithDouble:y2];
+
+        NSString *epsg3301url1 = @"https://epsg.io/trans?x={x}&y={y}&s_srs=3857&t_srs=3301";
+        NSCharacterSet *numbers = [NSCharacterSet
+            characterSetWithCharactersInString:@"0123456789."];
+
+        epsg3301url1 = [epsg3301url1 stringByReplacingOccurrencesOfString:@"{x}" withString:[myX1DoubleNumber stringValue]];
+        epsg3301url1 = [epsg3301url1 stringByReplacingOccurrencesOfString:@"{y}" withString:[myY1DoubleNumber stringValue]];
+        NSString *utmStr1 = [self getDataFrom:epsg3301url1];
+        NSArray *utmArray1 = [utmStr1 componentsSeparatedByString:@","];
+
+        x2 = [[[utmArray1[0] componentsSeparatedByCharactersInSet:
+                    [numbers invertedSet]]
+                    componentsJoinedByString:@""] doubleValue];
+        y1 = [[[utmArray1[1] componentsSeparatedByCharactersInSet:
+                    [numbers invertedSet]]
+                    componentsJoinedByString:@""] doubleValue];
+
+        NSString *epsg3301url2 = @"https://epsg.io/trans?x={x}&y={y}&s_srs=4326&t_srs=3301";
+
+        epsg3301url2 = [epsg3301url2 stringByReplacingOccurrencesOfString:@"{x}" withString:[myX2DoubleNumber stringValue]];
+        epsg3301url2 = [epsg3301url2 stringByReplacingOccurrencesOfString:@"{y}" withString:[myY2DoubleNumber stringValue]];
+        NSString *utmStr2 = [self getDataFrom:epsg3301url1];
+        NSArray *utmArray2 = [utmStr2 componentsSeparatedByString:@","];
+
+        x1 = [[[utmArray2[0] componentsSeparatedByCharactersInSet:
+                    [numbers invertedSet]]
+                    componentsJoinedByString:@""] doubleValue];
+        y2 = [[[utmArray2[1] componentsSeparatedByCharactersInSet:
+                    [numbers invertedSet]]
+                    componentsJoinedByString:@""] doubleValue];
+    }//x1x2y1y2 annab mingi vastuse...
+
+
+    NSArray *result  =[[NSArray alloc] initWithObjects:
                        [NSNumber numberWithDouble:x1 ],
                        [NSNumber numberWithDouble:y1 ],
                        [NSNumber numberWithDouble:x2 ],
